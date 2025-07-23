@@ -1,3 +1,5 @@
+# sentiment_model.py
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -53,7 +55,7 @@ class IndoBERT_LSTM_Classifier(nn.Module):
         return self.fc(hidden)
 
 class SentimentAnalyzer:
-    def __init__(self, model_type='bert', model_name='indobenchmark/indobert-base-p1', max_len=128, batch_size=32):
+    def __init__(self, model_type='bert', model_name='indobenchmark/indobert-base-p1', max_len=128, batch_size=64):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print(f"Model akan menggunakan device: {self.device} | Arsitektur: {model_type.upper()}")
         self.model_type = model_type
@@ -82,17 +84,17 @@ class SentimentAnalyzer:
         labels = torch.tensor(df['label'].values)
         dataset = TensorDataset(encoded_inputs['input_ids'], encoded_inputs['attention_mask'], labels)
         train_size = int(0.8 * len(dataset))
-        val_size = len(dataset) - train_size
-        train_dataset, self.test_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+        test_size = len(dataset) - train_size
+        train_dataset, self.test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
         self.train_dataloader = DataLoader(train_dataset, sampler=RandomSampler(train_dataset), batch_size=self.batch_size)
         self.test_dataloader = DataLoader(self.test_dataset, sampler=SequentialSampler(self.test_dataset), batch_size=self.batch_size)
-        print(f"DataLoaders siap (Train: {train_size}, Test: {val_size}).")
+        print(f"DataLoaders siap (Train: {train_size}, Test: {test_size}).")
 
     def train(self, epochs=3):
         optimizer = torch.optim.AdamW(self.model.parameters(), lr=2e-5)
         criterion = nn.CrossEntropyLoss().to(self.device)
         history = {'loss': [], 'val_loss': []}
-        print(f"Memulai training untuk {epochs} epoch...")
+        print(f"🏋️ Memulai training untuk {epochs} epoch...")
         for epoch in range(epochs):
             self.model.train()
             total_train_loss = 0
@@ -154,16 +156,14 @@ class SentimentAnalyzer:
         return {'accuracy': accuracy, 'precision_macro': precision, 'recall_macro': recall, 'f1_macro': f1, 'report_dict': report_dict, 'confusion_matrix': cm}
     
     def save_model(self, file_path='model.pt'):
-        """Menyimpan state_dict dari model yang sudah dilatih."""
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         torch.save(self.model.state_dict(), file_path)
         print(f"Model berhasil disimpan di: {file_path}")
 
     def load_model(self, file_path='model.pt'):
-        """Memuat state_dict model dari file."""
         if os.path.exists(file_path):
             self.model.load_state_dict(torch.load(file_path, map_location=self.device))
-            self.model.eval() # Set model ke mode evaluasi setelah dimuat
+            self.model.eval()
             print(f"Model berhasil dimuat dari: {file_path}")
         else:
             raise FileNotFoundError(f"File model tidak ditemukan di {file_path}. Lakukan training terlebih dahulu.")

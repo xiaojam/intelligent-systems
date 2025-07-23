@@ -1,23 +1,19 @@
+# data_crawler.py
+
 import pandas as pd
 from google_play_scraper import reviews, Sort
 import time
 
 def crawl_reviews(app_id: str, target_count: int, lang: str = 'id', country: str = 'id') -> pd.DataFrame:
-    """
-    Melakukan crawling review dari Google Play Store untuk aplikasi tertentu.
-    """
+    """Melakukan crawling review dari Google Play Store untuk aplikasi tertentu."""
     print(f"Memulai crawling untuk aplikasi: {app_id}")
     all_reviews = []
     continuation_token = None
     
     while len(all_reviews) < target_count:
         result, token = reviews(
-            app_id,
-            lang=lang,
-            country=country,
-            sort=Sort.NEWEST,
-            count=200,
-            continuation_token=continuation_token
+            app_id, lang=lang, country=country, sort=Sort.NEWEST,
+            count=200, continuation_token=continuation_token
         )
         if not result:
             print("Tidak ada ulasan lebih lanjut yang ditemukan.")

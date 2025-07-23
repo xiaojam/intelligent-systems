@@ -77,4 +77,4 @@ jupyter kernelspec uninstall "ojam_310_env"
 - Scipy
 - Google Play Scraper
 - Transformers
-- ipykernel
+- Ipykernel
